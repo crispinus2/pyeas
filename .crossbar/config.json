@@ -46,6 +46,10 @@
           "paths": {
             "ws": {
               "type": "websocket"
+            },
+            "/": {
+              "type": "static",
+              "directory": "../webroot"
             }
           }
         }

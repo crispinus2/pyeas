@@ -6,8 +6,9 @@ from os import environ
 from autobahn.twisted.component import Component
 from autobahn.twisted.component import run
 from autobahn.wamp.exception import ApplicationError
+from autobahn.wamp.types import CallResult
 from autobahn.wamp import register
-from peewee import SqliteDatabase, Model, CharField, ForeignKeyField, IntegerField, DoesNotExist, IntegrityError
+from peewee import SqliteDatabase, Model, CharField, ForeignKeyField, IntegerField, DoesNotExist, IntegrityError, JOIN
 
 eascomp = Component(
     transports=u"ws://localhost:8080/ws",
@@ -95,16 +96,18 @@ class Room(BaseModel):
         self.clearPatient()
 
 
-@eascomp.register(u"com.eas.addRoom")
+@eascomp.register(u"com.eas.add_room")
 def addRoom(name):
-    Room.create(name=name)
-    Room.save()
-    if mySession:
-        mySession.publish(u"com.eas.room_added", name)
+    try:
+        Room.create(name=name)
+        if mySession:
+            mySession.publish(u"com.eas.room_added", name)
+    except IntegrityError:
+        raise ApplicationError(u"com.eas.room_exists", name)
     return True
 
 
-@eascomp.register(u"com.eas.deleteRoom")
+@eascomp.register(u"com.eas.delete_room")
 def deleteRoom(name):
     room = Room.get_or_none(name=name)
     if room is not None:
@@ -116,7 +119,7 @@ def deleteRoom(name):
         raise ApplicationError(u"com.eas.error.room_not_found", room=room)
 
 
-@eascomp.register(u"com.eas.populateRoom")
+@eascomp.register(u"com.eas.populate_room")
 def populateRoom(name, patId, patName, patSurname, patTitle):
     room = Room.get_or_none(name=name)
     if room is not None:
@@ -140,7 +143,7 @@ def populateRoom(name, patId, patName, patSurname, patTitle):
     return True
 
 
-@eascomp.register(u"com.eas.roomMessage")
+@eascomp.register(u"com.eas.room_message")
 def setRoomMessage(name, message):
     room = Room.get_or_none(name = name)
     if room is not None:
@@ -154,7 +157,7 @@ def setRoomMessage(name, message):
         raise ApplicationError(u"com.eas.error.room_not_found", room=room)
 
 
-@eascomp.register(u"com.eas.clearRoom")
+@eascomp.register(u"com.eas.clear_room")
 def clearRoom(name):
     room = Room.get_or_none(name = name)
     if room is not None:
@@ -169,22 +172,22 @@ def clearRoom(name):
 
 @eascomp.register(u"com.eas.list_rooms")
 def listRooms():
-    rooms = Room.select().join(Patient)
+    rooms = Room.select() #.join(Patient, JOIN.LEFT_OUTER)
     return_list = []
     for room in rooms:
-        ret_dict = {'room': room.name, 'message': room.message}
+        ret_dict = {u'room': room.name, u'message': room.message}
         if room.patient is None:
-            ret_dict['empty'] = True
+            ret_dict[u'empty'] = True
         else:
-            ret_dict['patient_id'] = room.patient.patId
-            ret_dict['patient_name'] = room.patient.name
-            ret_dict['patient_surname'] = room.patient.surname
-            ret_dict['patient_title'] = room.patient.title
-            ret_dict['empty'] = False
+            ret_dict[u'patient_id'] = room.patient.patId
+            ret_dict[u'patient_name'] = room.patient.name
+            ret_dict[u'patient_surname'] = room.patient.surname
+            ret_dict[u'patient_title'] = room.patient.title
+            ret_dict[u'empty'] = False
 
         return_list.append(ret_dict)
 
-    return return_list
+    return CallResult(return_list)
 
 
 def createTables():
