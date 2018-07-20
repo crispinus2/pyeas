@@ -1,13 +1,31 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+"""
+    easserver.py - core server of the Elektronisches Aufruf System
+    Copyright (C) 2018 Julian Hartig
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+"""
+
 from os import environ
 
 from autobahn.twisted.component import Component
 from autobahn.twisted.component import run
 from autobahn.wamp.exception import ApplicationError
 from autobahn.wamp.types import CallResult
-from autobahn.wamp import register
 from peewee import SqliteDatabase, Model, CharField, ForeignKeyField, IntegerField, DoesNotExist, IntegrityError, JOIN
 
 eascomp = Component(
@@ -132,6 +150,23 @@ def setRoomPriority(name, priority):
     else:
         raise ApplicationError(u"com.eas.error.room_not_found", room=room)
 
+@eascomp.register(u"com.eas.clear_room")
+def clearRoom(name):
+    room = None
+    if name is Room:
+        room = name
+    else:
+        room = Room.get_or_none(name = name)
+    if room is not None:
+        room.patient = None
+        room.save()
+        if mySession:
+            mySession.publish(u"com.eas.room_populated", unicode(name), None)
+        return True
+    else:
+        raise ApplicationError(u"com.eas.error.room_not_found", room=unicode(room))
+
+
 @eascomp.register(u"com.eas.populate_room")
 def populateRoom(name, patId, patName, patSurname, patTitle):
     room = Room.get_or_none(name=name)
@@ -144,14 +179,23 @@ def populateRoom(name, patId, patName, patSurname, patTitle):
             patient.title = patTitle
             patient.save()
 
-        room.patient = patient
-        room.save()
+        oldroom = None
+        with db.atomic() as transaction:
+            oldroom = Room.get_or_none(patient=patient)
+            if oldroom is not None:
+                oldroom.patient = None
+                oldroom.save()
 
-        if mySession:
-            mySession.publish(u"com.eas.room_populated", name, {'id': patId, 'name': patName,
-                                                                'surname': patSurname, 'title': patTitle})
+            room.patient = patient
+            room.save()
+
+            if mySession:
+                if oldroom is not None:
+                    mySession.publish(u"com.eas.room_populated", unicode(oldroom.name), None)
+                mySession.publish(u"com.eas.room_populated", unicode(name), { u"id": unicode(patId), u"name": unicode(patName),
+                                                                u"surname": unicode(patSurname), u"title": unicode(patTitle)})
     else:
-        raise ApplicationError(u"com.eas.error.room_not_found", room=room)
+        raise ApplicationError(u"com.eas.error.room_not_found", room=name)
 
     return True
 
@@ -162,22 +206,13 @@ def setRoomMessage(name, message):
     if room is not None:
         room.message = message
         room.save()
-        return True
 
+        resmsg = unicode(message)
+        if message is None:
+            resmsg = None
         if mySession:
-            mySession.publish(u"com.eas.room_message_set", name, message)
-    else:
-        raise ApplicationError(u"com.eas.error.room_not_found", room=room)
+            mySession.publish(u"com.eas.room_message_set", unicode(name), resmsg)
 
-
-@eascomp.register(u"com.eas.clear_room")
-def clearRoom(name):
-    room = Room.get_or_none(name = name)
-    if room is not None:
-        room.patient = None
-        room.save()
-        if mySession:
-            mySession.publish(u"com.eas.room_cleared", name)
         return True
     else:
         raise ApplicationError(u"com.eas.error.room_not_found", room=room)
@@ -194,10 +229,10 @@ def listRooms():
             ret_dict[u'patient'] = None
         else:
             patient = {
-                'id': room.patient.patId,
-                'name': room.patient.name,
-                'surname': room.patient.surname,
-                'title': room.patient.title
+                u'id': room.patient.patId,
+                u'name': room.patient.name,
+                u'surname': room.patient.surname,
+                u'title': room.patient.title
             }
             ret_dict[u'patient'] = patient
             ret_dict[u'empty'] = False

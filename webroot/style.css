@@ -128,14 +128,41 @@ body {
     position: relative;
 }
 
+.room.hasmessage {
+    background-color: #ffffd7;
+    border-color: #ffff00;
+}
+
+.room.occupied {
+    background-color: #ffd7d7;
+    border-color: #ff0000
+}
+
 .roomname {
     background-color: #9bff9b;
     padding: 10px;
     font-size: 12pt;
+    font-weight: bold;
+}
+
+.room.hasmessage > .roomname {
+    background-color: #ffff9b
+}
+
+.room.occupied > .roomname {
+    background-color: #ff9b9b
 }
 
 .roompatient {
-    padding: 10px 10px;
+    padding: 5px 10px;
+}
+
+.roommessage {
+    padding: 10px 10px 5px 10px;
+}
+
+.roommessage_text {
+    font-style: italic;
 }
 
 .roomcontrol {

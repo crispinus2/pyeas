@@ -21,6 +21,10 @@
         <label for="new_room_priority">Priorität:</label>
         <input type="text" name="new_room_priority" id="new_room_priority" class="new_room" value="0"/>
     </div>
+    <div id="dialog-message" title="Nachricht eingeben">
+        <label for="room_message_text" class="room_message">Nachricht:</label>
+        <input type="text" name="room_message_text" id="room_message_text" class="room_message"/>
+    </div>
     <div id="dialog-error" title="Fehler">
         <p>Priorität muss eine Ganzzahl sein.</p>
     </div>
@@ -74,14 +78,22 @@
         $("#dialog-new-room").dialog("open");
     }
     
+    function clear_room(room_unescaped) {
+        session.call('com.eas.clear_room', [room_unescaped]);
+    }
+    
     function populate_room(room_unescaped, patient) {
         room = idToRoom[room_unescaped];
         if(patient!=null) {
-            var patstring = "";
+            var patstring = patient["name"]+", ";
             if(patient["title"]!="") patstring += patient["title"]+" ";
-            patstring += patient["name"] + ", " + patient["surname"];
+            patstring += patient["surname"];
             $("#roompatient_"+room).text(patstring);
+            $("#roompatient_"+room).append('<a href="#" id="clear_'+room+'"><span class="ui-icon ui-icon-closethick"/></a>');
             $("#room_"+room).addClass("occupied");
+            $("#clear_"+room).click(function() {
+               clear_room(room_unescaped); 
+            });
         }
         else {
             var field = "#roompatient_"+room;
@@ -90,9 +102,9 @@
         }
     }
 
-    function set_room_message(room_unescaped, message) {
+    function room_message_changed(room_unescaped, message) {
         room = idToRoom[room_unescaped];
-        if(message!=null) {
+        if(message!=null && message != "") {
             $("#roommessage_"+room).text(message);
             $("#room_"+room).addClass("hasmessage");
         }
@@ -115,6 +127,10 @@
     {
         //set_edit_mode(false);
         session.call('com.eas.room_set_priority', [room, priority]);
+    }
+    
+    function set_room_message(room, message) {
+        session.call('com.eas.room_message', [room, message]);
     }
     
     function populate_roomcontrol(room_unescaped, priority) {
@@ -156,12 +172,22 @@
         $("#rooms").append(
             '<div class="room" id="room_'+ room +'" data-priority="'+priority+'">\
                 <div class="roomname" id="roomname_'+room+'"></div>\
-                <div class="roommessage" id="roommessage_'+room+'"></div>\
+                <div class="roommessage"> \
+                    <span class="roommessage_text" id="roommessage_'+room+'"></span>\
+                    <a href="#" id="edit_message_'+room+'" title="Nachricht setzen"><span class="ui-icon ui-icon-pin-w"/></a> \
+                </div> \
                 <div class="roompatient" id="roompatient_'+room+'"></div>\
                 <div class="roomcontrol" id="roomcontrol_'+room+'"></div>\
             </div>');
         $("#roomname_"+room).text(room_unescaped);
-        set_room_message(room_unescaped, message);
+        $("#edit_message_"+room).click(function() {
+            selected_room = room_unescaped;
+            room = idToRoom[selected_room];
+            preval = $("#roommessage_"+room).text();
+            $("#room_message_text").val(preval);
+            $("#dialog-message").dialog("open");
+        });
+        room_message_changed(room_unescaped, message);
         populate_room(room_unescaped, patient);
         populate_roomcontrol(room_unescaped, priority);
         if(editMode) {
@@ -188,6 +214,7 @@
         $("#room_"+room).attr('data-priority', priority);
         sort_rooms();
     }
+    
     
     var clock_timeout = 0;
     var interval_msec = 500;
@@ -296,6 +323,29 @@
             }
         });
         
+        $("#dialog-message").dialog({
+            resizable: false,
+            dialogClass: "no-close",
+            height: "auto",
+            width: 400,
+            autoOpen: false,
+            modal: true,
+            buttons: {
+                "Speichern": function() {
+                    msg = $("#room_message_text").val();
+                    if(msg == "")
+                        msg = null;
+                    set_room_message(selected_room, msg);
+                    $("#room_message_text").val("");
+                    $(this).dialog("close");
+                },
+                "Abbrechen": function() {
+                    $("#room_message_text").val("");
+                    $(this).dialog("close");
+                }
+            }
+        });
+        
         $("#dialog-error").dialog({
             resizable: false,
             height: "auto",
@@ -333,6 +383,18 @@
             }
             
             session.subscribe('com.eas.room_added', on_room_added);
+            
+            function on_room_populated(args, kwargs) {
+                populate_room(args[0], args[1]);
+            }
+            
+            session.subscribe('com.eas.room_populated', on_room_populated);
+            
+            function on_room_message_set(args, kwargs) {
+                room_message_changed(args[0], args[1]);
+            }
+            
+            session.subscribe('com.eas.room_message_set', on_room_message_set);
             
             session.call('com.eas.list_rooms').then(
                 function(res) {
