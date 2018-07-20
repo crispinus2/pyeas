@@ -55,6 +55,7 @@ class Room(BaseModel):
     name = CharField(null=False, unique=True)
     message = CharField(null=True)
     patient = ForeignKeyField(Patient, backref="patients", null=True, on_delete="SET NULL", on_update="CASCADE")
+    priority = IntegerField(null=False, default=0)
 
     """
     Return this room's state text
@@ -97,11 +98,11 @@ class Room(BaseModel):
 
 
 @eascomp.register(u"com.eas.add_room")
-def addRoom(name):
+def addRoom(name, priority):
     try:
-        Room.create(name=name)
+        Room.create(name=name, priority=priority)
         if mySession:
-            mySession.publish(u"com.eas.room_added", name)
+            mySession.publish(u"com.eas.room_added", name=name, priority=priority)
     except IntegrityError:
         raise ApplicationError(u"com.eas.room_exists", name)
     return True
@@ -119,6 +120,18 @@ def deleteRoom(name):
         raise ApplicationError(u"com.eas.error.room_not_found", room=room)
 
 
+@eascomp.register(u"com.eas.room_set_priority")
+def setRoomPriority(name, priority):
+    room = Room.get_or_none(name=name)
+    if room is not None:
+        room.priority = priority
+        room.save()
+        if mySession:
+            mySession.publish(u"com.eas.room_priority_changed", room=name, priority=priority)
+        return True
+    else:
+        raise ApplicationError(u"com.eas.error.room_not_found", room=room)
+
 @eascomp.register(u"com.eas.populate_room")
 def populateRoom(name, patId, patName, patSurname, patTitle):
     room = Room.get_or_none(name=name)
@@ -135,8 +148,8 @@ def populateRoom(name, patId, patName, patSurname, patTitle):
         room.save()
 
         if mySession:
-            mySession.publish(u"com.eas.room_populated", name, {'patient_id': patId, 'patient_name': patName,
-                                                                'patient_surname': patSurname, 'patient_title': patTitle})
+            mySession.publish(u"com.eas.room_populated", name, {'id': patId, 'name': patName,
+                                                                'surname': patSurname, 'title': patTitle})
     else:
         raise ApplicationError(u"com.eas.error.room_not_found", room=room)
 
@@ -175,14 +188,18 @@ def listRooms():
     rooms = Room.select() #.join(Patient, JOIN.LEFT_OUTER)
     return_list = []
     for room in rooms:
-        ret_dict = {u'room': room.name, u'message': room.message}
+        ret_dict = {u'room': room.name, u'priority': room.priority, u'message': room.message}
         if room.patient is None:
             ret_dict[u'empty'] = True
+            ret_dict[u'patient'] = None
         else:
-            ret_dict[u'patient_id'] = room.patient.patId
-            ret_dict[u'patient_name'] = room.patient.name
-            ret_dict[u'patient_surname'] = room.patient.surname
-            ret_dict[u'patient_title'] = room.patient.title
+            patient = {
+                'id': room.patient.patId,
+                'name': room.patient.name,
+                'surname': room.patient.surname,
+                'title': room.patient.title
+            }
+            ret_dict[u'patient'] = patient
             ret_dict[u'empty'] = False
 
         return_list.append(ret_dict)

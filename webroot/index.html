@@ -4,39 +4,349 @@
     <title>PyEAS - Elektronisches AufrufSystem</title>
     <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
     <link rel="stylesheet" href="style.css" type="text/css"/>
+    <link rel="stylesheet" href="jquery-ui.min.css"/>
+    <link rel="stylesheet" href="jquery-ui.theme.min.css"/>
     <script src="autobahn.js" type="text/javascript"></script>
-    <script>
+    <script src="jquery-3.3.1.min.js" type="text/javascript"></script>
+    <script src="jquery-ui.min.js" type="text/javascript"></script>
 
+</head>
+<body>
+    <div id="dialog-confirm" title="Raum löschen?">
+        <p>Soll der gewählte Raum wirklich gelöscht werden?</p>
+    </div>
+    <div id="dialog-new-room" title="Raum anlegen">
+        <label for="new_room_name" class="new_room">Name:</label>
+        <input type="text" name="new_room_name" id="new_room_name" class="new_room"/>
+        <label for="new_room_priority">Priorität:</label>
+        <input type="text" name="new_room_priority" id="new_room_priority" class="new_room" value="0"/>
+    </div>
+    <div id="dialog-error" title="Fehler">
+        <p>Priorität muss eine Ganzzahl sein.</p>
+    </div>
+    
+    <div id="titlebar">
+        <div id="title">EAS</div>
+        <div id="clock_wrapper">
+            <div id="clock"></div>
+        </div>
+    </div>
+    <div id="content">
+        <div id="rooms">
+
+        </div>
+        <div style="clear:both"/>
+        <div id="tools">
+            <a href="#" onclick="new_room()">neu</a>
+            <a href="#" onclick="toggle_edit_mode()">bearbeiten</a>
+        </div>
+    </div>
+</body>
+<script>
+    var idToRoom = {};
+    var roomNo = 0;
+    var editMode = false;
+    var session = null;
+    var selected_room = null;
+        
+    function set_edit_mode(mode)
+    {
+        if(mode){
+            editMode = true;
+            $(".roomcontrol").show();
+        }
+        else {
+            editMode = false;
+            $(".roomcontrol").hide();
+        }
+    }
+    
+    function toggle_edit_mode() {
+        if(editMode == false) {
+            set_edit_mode(true);
+        }
+        else {
+            set_edit_mode(false);
+        }
+    }
+    
+    function new_room() {
+        $("#dialog-new-room").dialog("open");
+    }
+    
+    function populate_room(room_unescaped, patient) {
+        room = idToRoom[room_unescaped];
+        if(patient!=null) {
+            var patstring = "";
+            if(patient["title"]!="") patstring += patient["title"]+" ";
+            patstring += patient["name"] + ", " + patient["surname"];
+            $("#roompatient_"+room).text(patstring);
+            $("#room_"+room).addClass("occupied");
+        }
+        else {
+            var field = "#roompatient_"+room;
+            $(field).text("frei");
+            $("#room_"+room).removeClass("occupied");
+        }
+    }
+
+    function set_room_message(room_unescaped, message) {
+        room = idToRoom[room_unescaped];
+        if(message!=null) {
+            $("#roommessage_"+room).text(message);
+            $("#room_"+room).addClass("hasmessage");
+        }
+        else {
+            $("#roommessage_"+room).text('');
+            $("#room_"+room).removeClass("hasmessage");
+        }
+    }
+
+    function sort_rooms() {
+        var $roomcontainer = $("#rooms");
+        var $rooms = $roomcontainer.find(".room");
+        [].sort.call($rooms, function(a,b) {
+            return +$(a).attr('data-priority') - +$(b).attr('data-priority');
+        });
+        $roomcontainer.append($rooms);
+    }
+    
+    function set_room_priority(room, priority)
+    {
+        //set_edit_mode(false);
+        session.call('com.eas.room_set_priority', [room, priority]);
+    }
+    
+    function populate_roomcontrol(room_unescaped, priority) {
+        room = idToRoom[room_unescaped];
+        $("#roomcontrol_"+room).append(
+            '<div class="priority_container">' +
+            '<span class="label">Priorität:</span><input type="text" class="priority" id="priority_'+room+'" value="'+priority+'"/>' +
+            '</div><div class="delete_button_container">' +
+            '<a href="#" class="delete_button" id="delete_'+room+'">löschen</a>' +
+            '</div>'
+            );
+            
+        $("#priority_"+room).blur(function(event) {
+            set_room_priority(room_unescaped, $(event.target).val());
+        });
+        
+        $("#priority_"+room).keypress(function(event) {
+            if(event.which == 13) {
+                set_room_priority(room_unescaped, $(event.target).val());
+                event.preventDefault();
+            }
+        });
+        
+        $("#delete_"+room).click(function() {
+            selected_room = room_unescaped; 
+            $("#dialog-confirm").dialog("open");
+        });
+    }
+    
+    function room_added(room_unescaped, priority, patient, message) {
+        if(room_unescaped in idToRoom) {
+            room_deleted(room_unescaped);
+        }
+        else {
+            idToRoom[room_unescaped] = "room"+roomNo;
+            roomNo++;
+        }
+        room = idToRoom[room_unescaped];
+        $("#rooms").append(
+            '<div class="room" id="room_'+ room +'" data-priority="'+priority+'">\
+                <div class="roomname" id="roomname_'+room+'"></div>\
+                <div class="roommessage" id="roommessage_'+room+'"></div>\
+                <div class="roompatient" id="roompatient_'+room+'"></div>\
+                <div class="roomcontrol" id="roomcontrol_'+room+'"></div>\
+            </div>');
+        $("#roomname_"+room).text(room_unescaped);
+        set_room_message(room_unescaped, message);
+        populate_room(room_unescaped, patient);
+        populate_roomcontrol(room_unescaped, priority);
+        if(editMode) {
+            $("#roomcontrol_"+room).show();
+        }
+        sort_rooms();
+    }
+    
+    function delete_room(room_unescaped) {
+        session.call('com.eas.delete_room', [room_unescaped]);
+    }
+    
+    function add_room(room_unescaped, priority) {
+        session.call('com.eas.add_room', [room_unescaped, priority]);
+    }
+    
+    function room_deleted(room_unescaped) {
+        room = idToRoom[room_unescaped];
+        $("#room_"+room).remove();
+    }
+    
+    function room_priority_changed(room_unescaped, priority) {
+        room = idToRoom[room_unescaped];
+        $("#room_"+room).attr('data-priority', priority);
+        sort_rooms();
+    }
+    
+    var clock_timeout = 0;
+    var interval_msec = 500;
+    
+    function update_clock() {
+        var dt_now = new Date();
+		var hh	= dt_now.getHours();
+		var mm	= dt_now.getMinutes();
+		var ss	= dt_now.getSeconds();
+        var wd = dt_now.getDay();
+        var day = dt_now.getDate();
+        var month = dt_now.getMonth();
+        var year = dt_now.getFullYear();
+        var weekday = "";
+
+		if(hh < 10){
+			hh = "0" + hh;
+		}
+		if(mm < 10){
+			mm = "0" + mm;
+		}
+		if(ss < 10){
+			ss = "0" + ss;
+		}
+        if(day < 10){
+            day = "0" + day;
+        }
+        if(month < 10){
+            month = "0" + month;
+        }
+        
+        switch(wd) {
+            case 0:
+                weekday = "So.";
+                break;
+            case 1:
+                weekday = "Mo.";
+                break;
+            case 2:
+                weekday = "Di.";
+                break;
+            case 3:
+                weekday = "Mi.";
+                break;
+            case 4:
+                weekday = "Do.";
+                break;
+            case 5:
+                weekday = "Fr.";
+                break;
+            case 6:
+                weekday = "Sa.";
+                break;
+        }
+        
+		$("#clock").html( weekday + ", " + day + "." + month + "." + year + " " + hh + ":" + mm + ":" + ss);
+
+        clock = setTimeout("update_clock()", interval_msec);
+    }
+    
+    $(document).ready(function() {
+        clock = setTimeout("update_clock()", interval_msec);
+        
+        $("#dialog-confirm").dialog({
+           resizable: false,
+            height: "auto",
+            width: 400,
+            autoOpen: false,
+            modal: true,
+            buttons: {
+                "Löschen": function() {
+                    delete_room(selected_room);
+                    $(this).dialog("close");
+                },
+                "Abbrechen": function() {
+                    $(this).dialog("close");
+                }
+            }
+        });
+        
+        $("#dialog-new-room").dialog({
+            resizable: false,
+            dialogClass: "no-close",
+            height: "auto",
+            width: 400,
+            autoOpen: false,
+            modal: true,
+            buttons: {
+                "Erstellen": function() {
+                    var priority = parseInt($("#new_room_priority").val());
+                    if(!Number.isInteger(priority)) {
+                        $("#dialog-error").dialog("open");
+                    }
+                    else {    
+                        add_room($("#new_room_name").val(), $("#new_room_priority").val());
+                        $("#new_room_name").val("");
+                        $("#new_room_priority").val("0");
+                        $(this).dialog("close");
+                    }
+                },
+                "Abbrechen": function() {
+                    $("#new_room_name").val("");
+                    $("#new_room_priority").val("0");
+                    $(this).dialog("close");
+                }
+            }
+        });
+        
+        $("#dialog-error").dialog({
+            resizable: false,
+            height: "auto",
+            width: 400,
+            autoOpen: false,
+            modal: true,
+            buttons: {
+                "Ok": function() {
+                    $(this).dialog("close");
+                }
+            }
+        });
+        
         var connection = new autobahn.Connection({
             url: 'ws://127.0.0.1:8080/ws',
             realm: 'eas'});
 
-        connection.onopen = function(session) {
-            session.call('com.eas.add_room', ['Sprechzimmer 1']).then(
-                function(res) {
-                },
-                function(err) {
-                    console.log("Error while creating room:", err.error, err.args, err.kwargs);
-                }
-            );
-
+        connection.onopen = function(mySession) {
+            session = mySession;
+            
+            function on_room_priority_changed(args, kwargs) {
+                room_priority_changed(kwargs.room, kwargs.priority);
+            }
+            
+            session.subscribe('com.eas.room_priority_changed', on_room_priority_changed);
+            
+            function on_room_deleted(args, kwargs) {
+                room_deleted(args[0]);
+            }
+            
+            session.subscribe('com.eas.room_deleted', on_room_deleted);
+            
+            function on_room_added(args, kwargs) {
+                room_added(kwargs.name, kwargs.priority, null, null);
+            }
+            
+            session.subscribe('com.eas.room_added', on_room_added);
+            
             session.call('com.eas.list_rooms').then(
                 function(res) {
                     console.log("Room result:", res);
+                    for(var i=0; i < res.length; i++) {
+                        room_added(res[i]["room"], res[i]["priority"], res[i]["patient"], res[i]["message"]);
+                    }
                 }
             );
         };
 
         console.log("Opening connection");
         connection.open();
-
-    </script>
-</head>
-<body>
-<div id="content">
-    <div id="rooms">
-
-    </div>
-</div>
-</body>
+        
+    });
+</script>
 </html>
