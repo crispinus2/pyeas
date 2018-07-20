@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-    easserver.py - core server of the Elektronisches Aufruf System
+    eas-populate-room.py - small tool for populating a room using a gdt file
     Copyright (C) 2018 Julian Hartig
 
     This program is free software: you can redistribute it and/or modify
@@ -30,7 +30,7 @@ from twisted.internet.defer import inlineCallbacks
 
 
 if len(sys.argv) < 4:
-    print("Usage: gdtparser.py SERVER GDTFILE ROOM")
+    print("Usage: eas-populate-room.py SERVER GDTFILE ROOM")
     sys.exit(1)
 
 easclient = Component(
