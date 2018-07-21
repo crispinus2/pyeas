@@ -36,14 +36,6 @@ eascomp = Component(
 db = SqliteDatabase("eas.db", pragmas={'foreign_keys': 1})
 mySession = None
 
-@eascomp.on_join
-def onJoin(session, details):
-    global mySession
-    print("Session attached")
-    if mySession is None:
-        mySession = session
-
-
 class BaseModel(Model):
     class Meta:
         database = db
@@ -220,7 +212,7 @@ def setRoomMessage(name, message):
 
 @eascomp.register(u"com.eas.list_rooms")
 def listRooms():
-    rooms = Room.select() #.join(Patient, JOIN.LEFT_OUTER)
+    rooms = Room.select().join(Patient, JOIN.LEFT_OUTER)
     return_list = []
     for room in rooms:
         ret_dict = {u'room': room.name, u'priority': room.priority, u'message': room.message}
@@ -241,6 +233,21 @@ def listRooms():
 
     return CallResult(return_list)
 
+@eascomp.on_join
+def onJoin(session, details):
+    global mySession
+    print("Session attached")
+    if mySession is None:
+        mySession = session
+
+    rooms = Room.select().join(Patient, JOIN.LEFT_OUTER)
+
+    for room in rooms:
+        mySession.publish(u"com.eas.room_added", name=room.name, priority=room.priority)
+        if room.patient is not None:
+            mySession.publish(u"com.eas.room_populated", unicode(room.name),
+                              {u"id": unicode(room.patient.patId), u"name": unicode(room.patient.name),
+                               u"surname": unicode(room.patient.surname), u"title": unicode(room.patient.title)})
 
 def createTables():
     with db:
