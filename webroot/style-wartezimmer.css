@@ -70,27 +70,52 @@ body {
 #clock_wrapper {
     float: right;
     color:#ffffff;
-    font-size: 25px;
+    font-size: 40px;
     height: 100%;
-    width: 300px;
-    position:relative
+    width: auto;
+    position:relative;
+    line-height: 60px;
 }
 
 #clock {
-   position: absolute;
-   bottom: 10px;
-   right: 10px;
+    text-align: right;
+    padding-right: 10px;
 }
 
 #content {
     position: relative;
     width: auto;
-    max-width: 900px;
-    margin: 68px auto 0 auto;
-    background-color:#ffffff;
+    margin: 68px 10px 0 10px;
+}
+
+.call {
+    width: 100%;
+    background-color: #ffffff;
+    color: #000000;
     border-top: solid 4px #800000;
     border: solid 4px #800000;
     border-width: 4px 2px 4px 2px;
+    font-size: 40pt;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow:ellipsis;
+    margin-bottom: 10px;
+}
+
+.flashedcall {
+    background-color: #800000;
+    color: #ffffff;
+}
+
+.patient {
+    float:left;
+    font-weight: bold;
+    padding: 20px 10px;
+}
+
+.room {
+    float:right;
+    padding: 20px 10px;
 }
 
 .no-close .ui-dialog-titlebar-close {

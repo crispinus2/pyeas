@@ -1,23 +1,53 @@
 var session = null;
+var bellElement = document.createElement("audio");
+var idToRoom = {};
+var roomNo = 0;
+bellElement.setAttribute('src', 'bell.mp3');
 
 function populate_room(room_unescaped, patient) {
+    if(!(room_unescaped in idToRoom)) {
+        idToRoom[room_unescaped] = "room"+roomNo;
+        roomNo++;
+    }
+    
     room = idToRoom[room_unescaped];
+    $("#call_"+room).remove();
+    
     if(patient!=null) {
+        while($("#content .call").length >= 8)
+        {
+            $("#content .call").first().remove();
+        }
         var patstring = patient["name"]+", ";
         if(patient["title"]!="") patstring += patient["title"]+" ";
         patstring += patient["surname"];
-        $("#roompatient_"+room).text(patstring);
-        $("#roompatient_"+room).append('<a href="#" id="clear_'+room+'"><span class="ui-icon ui-icon-closethick"/></a>');
-        $("#room_"+room).addClass("occupied");
-        $("#clear_"+room).click(function() {
-           clear_room(room_unescaped); 
-        });
+        $("#content").append(
+            '<div class="call" id="call_'+room+'">' +
+            '    <div class="patient" id="call_patient_'+room+'"/>' +
+            '    <div class="room" id="call_room_'+room+'"/>' +
+            '    <div style="clear:both"/>' +
+            '</div>'
+            );
+        $("#call_patient_"+room).text(patstring);
+        $("#call_room_"+room).text(room_unescaped);
+        
+        flash_call($("#call_"+room), 21, false);
+        bellElement.pause();
+        bellElement.currentTime = 0;
+        bellElement.play();
+    }
+}
+
+function flash_call(call, times, flash) {
+    if(flash) {
+        call.removeClass("flashedcall");
     }
     else {
-        var field = "#roompatient_"+room;
-        $(field).text("frei");
-        $("#room_"+room).removeClass("occupied");
+        call.addClass("flashedcall");
     }
+    
+    if(times > 0)
+        window.setTimeout(function() { flash_call(call, times-1, !flash)}, 700);
 }
 
 var clock_timeout = 0;
@@ -113,5 +143,5 @@ $(document).ready(function() {
 
     console.log("Opening connection");
     connection.open();
-
+    
 });
