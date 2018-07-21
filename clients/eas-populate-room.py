@@ -67,6 +67,13 @@ if __name__ == '__main__':
         3104: "title",
         8402: "dowhat"
     }
+    infos = {
+        "id": 0,
+        "nameprefix": "",
+        "name": "",
+        "surname": "",
+        "title": ""
+    }
     with codecs.open(gdtfile, encoding="iso-8859-15", mode="r") as f:
         for line in f:
             linelen = int(line[:3])

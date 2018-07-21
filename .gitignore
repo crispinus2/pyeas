@@ -5,3 +5,6 @@ eas.db
 .crossbar/node.pid
 *.pyc
 warte1.gdt
+clients/build
+clients/dist
+clients/*.spec
