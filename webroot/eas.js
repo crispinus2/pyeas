@@ -39,7 +39,8 @@ function populate_room(room_unescaped, patient) {
         var patstring = patient["name"]+", ";
         if(patient["title"]!="") patstring += patient["title"]+" ";
         patstring += patient["surname"];
-        $("#roompatient_"+room).text(patstring);
+        $("#roompatient_"+room).append('<a href="easpatient:'+patient["id"]+'" title="Patient öffnen"></a>');
+        $("#roompatient_"+room+" a").text(patstring);
         $("#roompatient_"+room).append('<a href="#" id="clear_'+room+'"><span class="ui-icon ui-icon-closethick"/></a>');
         $("#room_"+room).addClass("occupied");
         $("#clear_"+room).click(function() {
@@ -320,7 +321,7 @@ $(document).ready(function() {
     });
 
     var connection = new autobahn.Connection({
-        url: 'ws://127.0.0.1:8080/ws',
+        url: 'ws://'+window.location.hostname+':8080/ws',
         realm: 'eas'});
 
     connection.onclose = function(reason, details) {

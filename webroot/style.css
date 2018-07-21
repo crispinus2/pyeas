@@ -157,6 +157,15 @@ body {
     padding: 5px 10px;
 }
 
+.roompatient a {
+    text-decoration:underline;
+    color: #000000;
+}
+
+.roompatient a:hover {
+    text-decoration:none;
+}
+
 .roommessage {
     padding: 10px 10px 5px 10px;
 }

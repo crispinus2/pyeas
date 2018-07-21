@@ -122,7 +122,7 @@ $(document).ready(function() {
     });
 
     var connection = new autobahn.Connection({
-        url: 'ws://127.0.0.1:8080/ws',
+        url: 'ws://'+window.location.hostname+':8080/ws',
         realm: 'eas'});
 
     connection.onclose = function(reason, details) {
