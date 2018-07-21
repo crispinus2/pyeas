@@ -1,0 +1,98 @@
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, embed, 
+figure, figcaption, footer, header, hgroup, 
+menu, nav, output, ruby, section, summary,
+time, mark, audio, video {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	font-size: 100%;
+	font: inherit;
+	vertical-align: baseline;
+}
+/* HTML5 display-role reset for older browsers */
+article, aside, details, figcaption, figure, 
+footer, header, hgroup, menu, nav, section {
+	display: block;
+}
+body {
+	line-height: 1;
+}
+ol, ul {
+	list-style: none;
+}
+blockquote, q {
+	quotes: none;
+}
+blockquote:before, blockquote:after,
+q:before, q:after {
+	content: '';
+	content: none;
+}
+table {
+	border-collapse: collapse;
+	border-spacing: 0;
+}
+
+body {
+    background-color:#f0f0f0;
+    color:#000000;
+    font-family:arial,verdana,tahoma;
+    font-size:10pt;
+}
+
+#titlebar {
+    position:fixed;
+    top:0px;
+    left:0px;
+    height:60px;
+    width:100%;
+    background: linear-gradient(to bottom, #800000 0%, #974b4b 100%);
+}
+
+#title {
+    color:#ffffff;
+    font-size:50px;
+    font-weight:bold;
+    line-height: 60px;
+    margin-left: 10px;
+    float: left;
+}
+
+#clock_wrapper {
+    float: right;
+    color:#ffffff;
+    font-size: 25px;
+    height: 100%;
+    width: 300px;
+    position:relative
+}
+
+#clock {
+   position: absolute;
+   bottom: 10px;
+   right: 10px;
+}
+
+#content {
+    position: relative;
+    width: auto;
+    max-width: 900px;
+    margin: 68px auto 0 auto;
+    background-color:#ffffff;
+    border-top: solid 4px #800000;
+    border: solid 4px #800000;
+    border-width: 4px 2px 4px 2px;
+}
+
+.no-close .ui-dialog-titlebar-close {
+    display:none;
+}
