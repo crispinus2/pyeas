@@ -8,3 +8,8 @@ warte1.gdt
 clients/build
 clients/dist
 clients/*.spec
+docs/*.out
+docs/*.backup
+docs/*.toc
+docs/*.log
+docs/*.aux
