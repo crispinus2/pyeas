@@ -39,6 +39,7 @@ function populate_room(room_unescaped, patient) {
         var patstring = patient["name"]+", ";
         if(patient["title"]!="") patstring += patient["title"]+" ";
         patstring += patient["surname"];
+        $("#roompatient_"+room).text("");
         $("#roompatient_"+room).append('<a href="easpatient:'+patient["id"]+'" title="Patient öffnen"></a>');
         $("#roompatient_"+room+" a").text(patstring);
         $("#roompatient_"+room).append('<a href="#" id="clear_'+room+'"><span class="ui-icon ui-icon-closethick"/></a>');
