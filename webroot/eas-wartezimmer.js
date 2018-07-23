@@ -2,6 +2,28 @@ var session = null;
 var bellElement = document.createElement("audio");
 var idToRoom = {};
 var roomNo = 0;
+var urlParams = new URLSearchParams(location.search);
+
+// Whether to call patients by name or by number
+var usePatientIdForCalling = false;
+
+// Maximum number of calls displayed at the same time
+var numberOfCalls = 8;
+
+if(urlParams.has("callby") && urlParams.get("callby") == "id") {
+    usePatientIdForCalling = true;
+}
+if(urlParams.has("calls")) {
+    try{
+        numberOfCalls = Number.parseInt(urlParams.get("calls"));
+    }
+    catch(err)
+    {
+        console.log("Invalid value supplied for calls parameter: " + urlParams.get("calls")+", expect integer");
+    }
+}
+
+
 bellElement.setAttribute('src', 'bell.mp3');
 
 function populate_room(room_unescaped, patient) {
@@ -14,13 +36,21 @@ function populate_room(room_unescaped, patient) {
     $("#call_"+room).remove();
     
     if(patient!=null) {
-        while($("#content .call").length >= 8)
+        while($("#content .call").length >= numberOfCalls)
         {
             $("#content .call").first().remove();
         }
-        var patstring = patient["name"]+", ";
-        if(patient["title"]!="") patstring += patient["title"]+" ";
-        patstring += patient["surname"];
+        
+        var patstring;
+        
+        if(usePatientIdForCalling)
+            patstring = patient["id"];
+        else {
+            var patstring = patient["name"]+", ";
+            if(patient["title"]!="") patstring += patient["title"]+" ";
+            patstring += patient["surname"];
+        }
+        
         $("#content").append(
             '<div class="call" id="call_'+room+'">' +
             '    <div class="patient" id="call_patient_'+room+'"/>' +

@@ -121,7 +121,7 @@ Die Wartezimmeransicht wird über diese Adresse aufgerufen:
  http://<server-ip>:<server-port>/wartezimmer.html
 \end{lstlisting}
 
-In der Wartezimmeransicht werden bis zu acht Patienten untereinander angezeigt mit den jeweiligen Räumen, in die die Patienten sich begeben sollen. Der aktuellste Aufruf erscheint jeweils ganz unten in der Liste und blinkt für ca. 20 Sekunden auf. Auf Wunsch kann auch ein Signalton abgespielt werden,
+In der Wartezimmeransicht wird eine konfigurierbare Zahl von Patienten/Aufrufen untereinander angezeigt mit den jeweiligen Räumen, in die die Patienten sich begeben sollen. Der aktuellste Aufruf erscheint jeweils ganz unten in der Liste und blinkt für ca. 20 Sekunden auf. Auf Wunsch kann auch ein Signalton abgespielt werden,
 wenn ein neuer Aufruf erscheint (siehe Abschnitt \ref{ssec:tonsignal}).
 
 \begin{figure}[h]
@@ -132,7 +132,20 @@ wenn ein neuer Aufruf erscheint (siehe Abschnitt \ref{ssec:tonsignal}).
  \caption{Wartezimmeransicht}
 \end{figure}
 
-Sind die acht Einträge erreicht, so wird bei neuen Einträgen der jeweils älteste Eintrag von der Liste entfernt. Außerdem werden Patienten aus der Liste entfernt, die den entsprechenden Raum verlassen haben. Dies sorgt dafür, dass die Liste so übersichtlich wie möglich bleibt.
+Ist die Zahl der darzustellenden Einträge erreicht, so wird bei neuen Einträgen der jeweils älteste Eintrag von der Liste entfernt. Außerdem werden Patienten aus der Liste entfernt, die den entsprechenden Raum verlassen haben. Dies sorgt dafür, dass die Liste so übersichtlich wie möglich bleibt.
+
+\section{Konfiguration}
+Die Konfiguration erfolgt über den Query-String der verwendeten URL. 
+Eine beispielhafte URL mit Konfigurationsparametern könnte so aussehen:
+\begin{lstlisting}
+ http://<server-ip>:<server-port>/wartezimmer.html?calls=10&callsby=id
+\end{lstlisting}
+
+\subsection{Parameter \texttt{calls}}
+Der Parameter \texttt{calls} kann mit einer Ganzzahl als Wert verwendet werden, um die Zahl der gleichzeitig angezeigten Aufrufe zu steuern (Standardwert: \texttt{8}). 
+
+\subsection{Parameter \texttt{callby}}
+Wird der Parameter \texttt{callby} mit dem Wert \texttt{id} belegt, so werden Patienten nicht über ihren Namen sondern mit ihrer Patientennummer aufgerufen.
 
 \chapter{Anpassung des Designs}
 Durch entsprechende Bearbeitung der unter \texttt{webroot} befindlichen CSS-Dateien kann das Aussehen der EAS-Ansichten schnell und einfach an das Corporate Design der Praxis angepasst werden.
