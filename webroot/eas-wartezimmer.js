@@ -9,6 +9,7 @@ var usePatientIdForCalling = false;
 
 // Maximum number of calls displayed at the same time
 var numberOfCalls = 8;
+var displayWcState = true;
 
 if(urlParams.has("callby") && urlParams.get("callby") == "id") {
     usePatientIdForCalling = true;
@@ -22,7 +23,9 @@ if(urlParams.has("calls")) {
         console.log("Invalid value supplied for calls parameter: " + urlParams.get("calls")+", expect integer");
     }
 }
-
+if(urlParams.has("noWcState") && urlParams.get("noWcState") == "yes") {
+    displayWcState = false;
+}
 
 bellElement.setAttribute('src', 'bell.mp3');
 
@@ -180,17 +183,21 @@ $(document).ready(function() {
         }
 
         session.subscribe('com.eas.room_populated', on_room_populated);
-
-        function on_wc_state_changed(args, kwargs) {
-            wc_state_changed(args[0]);
-        }
-        session.subscribe('com.eas.wc_state_changed', on_wc_state_changed);
-
-        session.call('com.eas.get_wc_state').then(
-            function(res) {
-                wc_state_changed(res);
+        if(displayWcState) {
+            function on_wc_state_changed(args, kwargs) {
+                wc_state_changed(args[0]);
             }
-        );
+            session.subscribe('com.eas.wc_state_changed', on_wc_state_changed);
+
+            session.call('com.eas.get_wc_state').then(
+                function(res) {
+                    wc_state_changed(res);
+                }
+            );
+        }
+        else {
+            $("#wcbar").hide();
+        }
     };
 
     console.log("Opening connection");
