@@ -36,6 +36,8 @@ eascomp = Component(
 db = SqliteDatabase("eas.db", pragmas={'foreign_keys': 1})
 mySession = None
 
+wcOccupied = False
+
 class BaseModel(Model):
     class Meta:
         database = db
@@ -232,6 +234,24 @@ def listRooms():
         return_list.append(ret_dict)
 
     return CallResult(return_list)
+
+@eascomp.register(u"com.eas.set_wc_state")
+def setWcState(occupied):
+    global wcOccupied
+    wcOccupied = occupied
+
+    print("Setting WC state to %s" % wcOccupied)
+
+    if mySession:
+        mySession.publish(u"com.eas.wc_state_changed", wcOccupied)
+
+    return True
+
+@eascomp.register(u"com.eas.get_wc_state")
+def getWcState():
+    global wcOccupied
+
+    return wcOccupied
 
 @eascomp.on_join
 def onJoin(session, details):

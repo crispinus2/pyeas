@@ -68,6 +68,17 @@ function populate_room(room_unescaped, patient) {
     }
 }
 
+function wc_state_changed(wc_state) {
+    if(wc_state) {
+        $("#wcbar").addClass("occupied");
+        $("#wcbar").html("WC besetzt");
+    }
+    else {
+        $("#wcbar").removeClass("occupied");
+        $("#wcbar").html("WC frei");
+    }
+}
+
 function flash_call(call, times, flash) {
     if(flash) {
         call.removeClass("flashedcall");
@@ -169,6 +180,17 @@ $(document).ready(function() {
         }
 
         session.subscribe('com.eas.room_populated', on_room_populated);
+
+        function on_wc_state_changed(args, kwargs) {
+            wc_state_changed(args[0]);
+        }
+        session.subscribe('com.eas.wc_state_changed', on_wc_state_changed);
+
+        session.call('com.eas.get_wc_state').then(
+            function(res) {
+                wc_state_changed(res);
+            }
+        );
     };
 
     console.log("Opening connection");

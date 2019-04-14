@@ -67,6 +67,25 @@ body {
     float: left;
 }
 
+#wcbar {
+    position:fixed;
+    bottom: 0px;
+    left: 0px;
+    color: #008000;
+    font-weight: bold;
+    line-height: 60px;
+    height:60px;
+    width: 100%;
+    background-color: #d6dad6;
+    text-align:center;
+    font-size: 50px;
+}
+
+#wcbar.occupied {
+    background-color:#e1d0d0;
+    color: #800000;
+}
+
 #clock_wrapper {
     float: right;
     color:#ffffff;
